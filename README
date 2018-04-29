@@ -1,0 +1,82 @@
+MEC: Modular Matrix Exponentiation Cryptography
+
+Douglas Crockford
+douglas@crockford.com
+
+dec64.com
+2017-04-16
+Public Domain
+
+    NO WARRANTY EXPRESSED OR IMPLIED.
+    USE AT YOUR OWN RISK.
+    SUBJECT TO CHANGE WITHOUT NOTICE.
+    YOU HAVE BEEN WARNED.
+
+MEC is a new, untested, unproven system for public key cryptography. Its
+security depends on the difficulty of the discrete logarithm problem for
+modular matrixes. It has not been determined that this problem is
+sufficiently hard.
+
+This MEC implementation is in C and is delivered as three files:
+
+    mec.h
+    mec.c
+    mec.x64.asm
+
+This MEC implementation assumes the availability of 64 bit arithmetic.
+
+This MEC implementation provides a single function, mec_generate, which takes
+a private key in the form of an array of random bytes, and a 5x5 matrix in the
+form of an array of 25 unsigned 32 bit ints. The array of random bytes can be
+of any length, but a length of at least 64 bytes is recommended. mec_generate
+returns a 5x5 matrix as an array of 25 unsigned 32 bit ints.
+
+mec_generate does matrix exponentiation by matrix squaring and matrix
+multiplication. The squaring and multiplication operations are done modulo
+4294967291 = 2**32 - 5.
+
+This implementation also provides a read-only data structure called
+mec_base, the base matrix. The design of mec_base was derived from the Mars
+magic square. Each element was multiplied by 160000000 and then advanced to
+the next prime number.
+
+Two versions of mec_generate are provided here:
+
+    In C.
+
+    In x64 assembly language. This includes a NO_LEAK flag, making the function
+    run in near constant time to reduce key leakage through side channels.
+
+Here is an example of its use:
+
+Bob makes an array of random bytes that will be used as his private key.
+
+    mec8 bobs_private_key[64];
+    your_random_generator(bobs_private_key, 64);
+
+Bob passes his private key and mec_base to mec_generate, which will
+generate Bob's public key. Bob then publishes Bob's public key.
+
+    mec32 bobs_public_key[25];
+    mec_generate(bobs_public_key, mec_base, bobs_private_key, 64);
+
+Alice finds Bob's public key. She makes her own private key. She passes
+her private key and mec_base to mec_generate, which will generate Alice's
+public key. Alice sends Alice's public key to Bob.
+
+    mec8 alices_private_key[64];
+    your_random_generator(alices_private_key, 64);
+    mec32 alices_public_key[25];
+    mec_generate(alices_public_key, mec_base, alices_private_key, 64);
+
+Alice then passes her private key and Bob's public key to mec_generate,
+which generates a shared secret that Alice can use to secure her
+communications with Bob.
+
+    mec32 shared_secret[25];
+    mec_generate(shared_secret, bobs_public_key, alices_private_key, 64);
+
+Bob then passes his private key and Alice's public key to mec_generate,
+which generates the same shared secret.
+
+    mec_generate(shared_secret, alices_public_key, bobs_private_key, 64);
