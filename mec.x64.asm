@@ -95,7 +95,7 @@ matrix:
 
 if NO_LEAK
 
-; decoy will take an unneeded result.
+; decoy will take an unneeded product.
 
 decoy:
             qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -104,9 +104,9 @@ decoy:
 
 endif
 
-; result is the result of matrix multiplication.
+; product is the result of matrix multiplication.
 
-result:
+product:
             qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             qword   0, 0, 0
 
@@ -201,7 +201,7 @@ muladd macro  i, j
 
 modstore macro i
 
-;; Divide the sum by the modulus and store the remainder in the result matrix.
+;; Divide the sum by the modulus and store the remainder in the product matrix.
 ;; r2 had better be zero. Clear r15.
 
     mov     r0,r15
@@ -214,7 +214,7 @@ matrixmultiply macro
 
 ;;  r1      left matrix
 ;;  r13     right matrix
-;;  r10     result matrix
+;;  r10     product matrix
 
     mul___  0,0
     muladd  1,5
@@ -387,7 +387,7 @@ mec_generate:
 ;   r7      output
 ;   r8      private key
 ;   r9      private key length
-;   r10     result
+;   r10     product matrix
 ;   r11     decoy
 ;   r12     25
 ;   r13     right matrix
@@ -413,7 +413,7 @@ endif
 
     mov     r1,matrix
     copy    r1,r6               ; matrix <- input
-    mov     r10,result
+    mov     r10,product
 
 if NO_LEAK
     mov     r11,decoy
@@ -436,25 +436,25 @@ outer:
 inner:
 
     mov     r13,r1
-    matrixmultiply              ; result <- matrix * matrix
-    copy    r1,r10              ; matrix <- result
+    matrixmultiply              ; product <- matrix * matrix
+    copy    r1,r10              ; matrix <- product
 
 if NO_LEAK
 
     mov     r13,r6
-    matrixmultiply              ; result <- matrix * input
+    matrixmultiply              ; product <- matrix * input
     mov     r2,r1
     test    r3l,r3h             ; if next bit
-    cmovz   r2,r11              ;      matrix <- result
-    copy    r2,r10              ; else decoy <- result
+    cmovz   r2,r11              ;      matrix <- product
+    copy    r2,r10              ; else decoy <- product
                                 ; fi
 else
 
     test    r3l,r3h             ; if next bit
     jz      skip
     mov     r13,r6
-    matrixmultiply              ;     result <- matrix * input
-    copy    r1,r10              ;     matrix <- result
+    matrixmultiply              ;     product <- matrix * input
+    copy    r1,r10              ;     matrix <- product
     pad
 
 skip:                           ; fi
@@ -484,7 +484,7 @@ endif
 
     xor     r8,r8
     xor     r9,r9
-    clear   r10                 ; clear result
+    clear   r10                 ; clear product
 
 if NO_LEAK
     clear   r11                 ; clear decoy
