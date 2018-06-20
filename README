@@ -44,8 +44,7 @@ Two versions of mec_generate are provided here:
 
     In C.
 
-    In x64 assembly language. This includes a NO_LEAK flag, making the function
-    run in near constant time to reduce key leakage through side channels.
+    In x64 assembly language.
 
 Here is an example of its use:
 

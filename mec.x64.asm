@@ -1,6 +1,6 @@
 title   mec.x64.asm: mec for x64.
 
-; 2017-04-16
+; 2017-05-26
 ; Public Domain
 
 ; No warranty expressed or implied. Use at your own risk. You have been warned.
@@ -18,11 +18,6 @@ UNIX    equ 0                   ; calling convention: 0 for Win64, 1 for Unix
 ; Win64 passes parameters in
 ;   r1  r2  r8  r9
 ; What a world, what a world.
-
-NO_LEAK equ 1                   ; 0 for speed, 1 for leak resistence
-
-; This file can be configured to run fast, or to run in near constant time to
-; minimize key leakage.
 
 ; This file publishes two public symbols:
 
@@ -89,26 +84,19 @@ save_r15    qword   0
 ; matrix contains the current value of the matrix.
 
 matrix:
-            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            qword   0, 0, 0
+            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             pad
-
-if NO_LEAK
 
 ; decoy will take an unneeded product.
 
 decoy:
-            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            qword   0, 0, 0
+            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             pad
-
-endif
 
 ; product is the result of matrix multiplication.
 
 product:
-            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            qword   0, 0, 0
+            qword   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 mec_state ends
 
@@ -117,33 +105,32 @@ mec_state ends
 copy macro to,from
 
 ;; to and from identify two 5x5 mec32 matrixes. Copy matrix from to matrix to.
-;; Move two cells at a time.
 
     mov     r0,[from]
+    mov     r15,[from+1*8]
     mov     [to],r0
-    mov     r0,[from+1*8]
-    mov     [to+1*8],r0
+    mov     [to+1*8],r15
     mov     r0,[from+16]
+    mov     r15,[from+24]
     mov     [to+16],r0
-    mov     r0,[from+24]
-    mov     [to+24],r0
+    mov     [to+24],r15
     mov     r0,[from+32]
+    mov     r15,[from+40]
     mov     [to+32],r0
-    mov     r0,[from+40]
-    mov     [to+40],r0
+    mov     [to+40],r15
     mov     r0,[from+48]
+    mov     r15,[from+56]
     mov     [to+48],r0
-    mov     r0,[from+56]
-    mov     [to+56],r0
+    mov     [to+56],r15
     mov     r0,[from+64]
+    mov     r15,[from+72]
     mov     [to+64],r0
-    mov     r0,[from+72]
-    mov     [to+72],r0
+    mov     [to+72],r15
     mov     r0,[from+80]
+    mov     r15,[from+88]
     mov     [to+80],r0
-    mov     r0,[from+88]
-    mov     [to+88],r0
-    mov     r0,[from+96]
+    mov     [to+88],r15
+    mov     e0,[from+96]
     mov     [to+96],e0
     endm
 
@@ -415,9 +402,7 @@ endif
     copy    r1,r6               ; matrix <- input
     mov     r10,product
 
-if NO_LEAK
     mov     r11,decoy
-endif
 
     mov     r12,25
     mov     r14,MODULUS
@@ -439,27 +424,12 @@ inner:
     matrixmultiply              ; product <- matrix * matrix
     copy    r1,r10              ; matrix <- product
 
-if NO_LEAK
-
     mov     r13,r6
     matrixmultiply              ; product <- matrix * input
     mov     r2,r1
     test    r3l,r3h             ; if next bit
     cmovz   r2,r11              ;      matrix <- product
     copy    r2,r10              ; else decoy <- product
-                                ; fi
-else
-
-    test    r3l,r3h             ; if next bit
-    jz      skip
-    mov     r13,r6
-    matrixmultiply              ;     product <- matrix * input
-    copy    r1,r10              ;     matrix <- product
-    pad
-
-skip:                           ; fi
-
-endif
 
     shr     r3h,1               ; is there another bit in this byte?
     jnz     inner
@@ -485,10 +455,7 @@ endif
     xor     r8,r8
     xor     r9,r9
     clear   r10                 ; clear product
-
-if NO_LEAK
     clear   r11                 ; clear decoy
-endif
 
     mov     r12,[save_r12]
     mov     r13,[save_r13]
